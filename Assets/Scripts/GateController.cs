@@ -32,6 +32,14 @@ public class GateController : MonoBehaviour
 
 	void OnTriggerEnter2D(Collider2D other)
 	{
+		if (other.gameObject == GameManager.me.player.gameObject)
+		{
+			GameManager.me.OpenGates();
+		}
+	}
+
+	public void Open()
+	{
 		open = true;
 	}
 }
