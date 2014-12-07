@@ -24,17 +24,21 @@ public class GameManager : MonoBehaviour
 		for (int i = 0; i < waypoints.Count; i++)
 		{
 			Waypoint a = waypoints[i];
-			for (int j = 0; j < waypoints.Count; j++)
+			for (int j = i + 1; j < waypoints.Count; j++)
 			{
 				Waypoint b = waypoints[j];
 
 				Vector2 delta = b.transform.position - a.transform.position;
-				RaycastHit2D raycastHit = Physics2D.Raycast(transform.position, delta.normalized, delta.magnitude, waypointVisibilityMask.value);
 
-				if (raycastHit.collider == null)
+				if (delta.magnitude <= 10.0f)
 				{
-					a.connections.Add(b);
-					b.connections.Add(a);
+					RaycastHit2D raycastHit = Physics2D.Raycast(a.transform.position, delta.normalized, delta.magnitude, waypointVisibilityMask.value);
+
+					if (raycastHit.collider == null)
+					{
+						a.connections.Add(b);
+						b.connections.Add(a);
+					}
 				}
 			}
 		}
@@ -53,19 +57,24 @@ public class GameManager : MonoBehaviour
 
 				if (dist.sqrMagnitude < 0.5f)
 				{
-					Vector2 force = dist.normalized * 100.0f / (0.5f + dist.magnitude);
+					Vector2 force = dist.normalized * 50.0f / (0.5f + dist.magnitude);
 					a.rigidbody2D.AddForce(force);
 					b.rigidbody2D.AddForce(-force);
 
-					int r = random.Next(10);
-					if (r == 0 && b.currentWaypoint != null)
+					/*int r = random.Next(20);
+					if (r == 0 && a.CanSee(b.currentWaypoint))
 					{
 						a.SetWaypoint(b.currentWaypoint);
 					}
-					else if (r == 1 && a.currentWaypoint != null)
+					else if (r == 1 && b.CanSee(a.currentWaypoint))
 					{
 						b.SetWaypoint(a.currentWaypoint);
 					}
+					else if (r == 2)
+					{
+						a.SetWaypoint(FindWaypoint(a.transform.position));
+						b.SetWaypoint(FindWaypoint(b.transform.position));
+					}*/
 				}
 			}
 		}
@@ -87,15 +96,15 @@ public class GameManager : MonoBehaviour
 			float af = (transform.position - a.transform.position).magnitude;
 			float bf = (transform.position - b.transform.position).magnitude;
 
-			if (af < bf) return -1;
-			else if (af > bf) return 1;
+			if (af > bf) return -1;
+			else if (af < bf) return 1;
 			else return 0;
 		});
 
 		foreach (Waypoint waypoint in sortedWaypoints)
 		{
-			Vector2 delta = waypoint.transform.position - transform.position;
-			RaycastHit2D raycastHit = Physics2D.Raycast(transform.position, delta.normalized, delta.magnitude, waypointVisibilityMask.value);
+			Vector2 delta = new Vector2(waypoint.transform.position.x, waypoint.transform.position.y) - position;
+			RaycastHit2D raycastHit = Physics2D.Raycast(position, delta.normalized, delta.magnitude, waypointVisibilityMask.value);
 
 			if (raycastHit.collider == null)
 			{
@@ -104,5 +113,32 @@ public class GameManager : MonoBehaviour
 		}
 
 		return null;
+	}
+
+	public void AddInterest(Vector2 origin, float interest)
+	{
+		List<Waypoint> visibleWaypoints = new List<Waypoint>();
+		float totalDistance = 0.0f;
+
+		foreach (Waypoint waypoint in waypoints)
+		{
+			Vector2 delta = new Vector2(waypoint.transform.position.x, waypoint.transform.position.y) - origin;
+			if (delta.magnitude < 6.0f)
+			{
+				RaycastHit2D raycastHit = Physics2D.Raycast(origin, delta.normalized, delta.magnitude, waypointVisibilityMask.value);
+
+				if (raycastHit.collider == null)
+				{
+					visibleWaypoints.Add(waypoint);
+					totalDistance += (waypoint.transform.position - new Vector3(origin.x, origin.y, 0.0f)).magnitude;
+				}
+			}
+		}
+
+		foreach (Waypoint waypoint in visibleWaypoints)
+		{
+			float distance = (waypoint.transform.position - new Vector3(origin.x, origin.y, 0.0f)).magnitude;
+			waypoint.AddInterest(interest * distance / totalDistance);
+		}
 	}
 }
