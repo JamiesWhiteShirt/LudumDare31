@@ -18,7 +18,7 @@ public class ZombieController : MonoBehaviour
 	public Waypoint currentWaypoint;
 	private Vector3 pathCurve;
 	private Waypoint previousWaypoint;
-	private int idleness = 0;
+	public int idleness = 0;
 
 	private Vector2 loiterAround;
 	private Vector2 loiterTo;
@@ -186,7 +186,7 @@ public class ZombieController : MonoBehaviour
 
 	private void HandleIdleness()
 	{
-		if (rigidbody2D.velocity.magnitude < 0.2f)
+		if (currentWaypoint != null && rigidbody2D.velocity.magnitude < 0.5f)
 		{
 			idleness++;
 		}
@@ -199,6 +199,7 @@ public class ZombieController : MonoBehaviour
 		{
 			Waypoint w = GameManager.me.FindWaypoint(transform.position);
 
+			Debug.Log("Silly me");
 			SetWaypoint(w);
 		}
 	}

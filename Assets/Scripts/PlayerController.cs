@@ -9,11 +9,16 @@ public class PlayerController : MonoBehaviour
 	public Crosshair crosshair;
 	public GameObject bullet;
 
+	public int health = 1350;
+
 	public Sprite pistolCrosshair;
 	public Sprite minigunCrosshair;
 	public Sprite sniperCrosshair;
+	public Sprite pistolIcon;
+	public Sprite minigunIcon;
+	public Sprite sniperIcon;
 
-	private int currentGun;
+	public int currentGun;
 	private Gun[] guns;
 	private int timeUntilFire = 0;
 
@@ -21,14 +26,17 @@ public class PlayerController : MonoBehaviour
 	{
 		guns = new Gun[]{
 			new Gun(300.0f, 0.05f, 2.0f, 4, false, false, 25, 1.0f, pistolCrosshair),
-			new Gun(150.0f, 0.15f, 1.0f, 1, true, false, 5, 0.7f, minigunCrosshair),
-			new Gun(800.0f, 0.0f, 3.0f, 8, false, true, 75, 0.6f, sniperCrosshair)
+			new Gun(150.0f, 0.15f, 1.0f, 1, true, false, 8, 0.7f, minigunCrosshair),
+			new Gun(800.0f, 0.0f, 3.0f, 8, false, true, 100, 0.6f, sniperCrosshair)
 		};
 		SetGun(0);
 	}
 
 	void FixedUpdate()
 	{
+		health++;
+		if (health > 1350) health = 1350;
+
 		Vector2 acceleration = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
 		if (acceleration.magnitude > 1.0f)
 		{
@@ -66,6 +74,7 @@ public class PlayerController : MonoBehaviour
 
 		float s = 2.0f + rigidbody2D.velocity.magnitude / (maxSpeed * guns[currentGun].speedMultiplier);
 		crosshair.transform.localScale = new Vector3(s, s, s);
+		crosshair.GetComponent<SpriteRenderer>().color = new Color(1.0f, 1.0f, 1.0f, (guns[currentGun].autoFire || timeUntilFire <= 0) ? 1.0f : 0.5f);
 	}
 
 	void Update()
@@ -78,7 +87,7 @@ public class PlayerController : MonoBehaviour
 			}
 		}
 		
-		float swap = Input.GetAxis("MouseScrollwheel");
+		float swap = -Input.GetAxis("MouseScrollwheel");
 		if (swap > 0.0f)
 		{
 			Debug.Log("Next");
@@ -141,13 +150,20 @@ public class PlayerController : MonoBehaviour
 		crosshair.GetComponent<SpriteRenderer>().sprite = guns[currentGun].crosshair;
 	}
 
-	void OnCollisionEnter2D(Collision2D collision)
+	void OnCollisionStay2D(Collision2D collision)
 	{
 		ZombieController zombie = collision.collider.gameObject.GetComponent<ZombieController>();
 		if (zombie != null)
 		{
-			GameManager.me.AddInterest(transform.position, 100000.0f);
+			GameManager.me.AddInterest(transform.position, 10000.0f);
+			Damage(30);
 		}
+	}
+
+	public void Damage(int amount)
+	{
+		health -= amount;
+		if (health < 0) health = 0;
 	}
 
 	private class Gun
