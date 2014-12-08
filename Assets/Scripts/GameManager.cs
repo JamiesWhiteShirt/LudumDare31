@@ -6,11 +6,17 @@ public class GameManager : MonoBehaviour
 {
 	public static GameManager me;
 
+	public float arenaWidth;
+	public float arenaHeight;
+	public WaveManager waveManager;
 	public PlayerController player;
 	public Waypoint playerWaypoint;
 	public GateController[] gates;
+	public GameObject waypointContainer;
 	public List<Waypoint> waypoints;
 	public LayerMask waypointVisibilityMask;
+	public Waypoint waypointL;
+	public Waypoint waypointR;
 	public static List<ZombieController> zombies = new List<ZombieController>();
 	private System.Random random = new System.Random();
 
@@ -18,8 +24,7 @@ public class GameManager : MonoBehaviour
 	{
 		me = this;
 
-		waypoints = new List<Waypoint>(GameObject.FindObjectsOfType<Waypoint>());
-		waypoints.Remove(playerWaypoint);
+		waypoints = new List<Waypoint>(waypointContainer.GetComponentsInChildren<Waypoint>());
 
 		for (int i = 0; i < waypoints.Count; i++)
 		{
@@ -46,6 +51,8 @@ public class GameManager : MonoBehaviour
 
 	void FixedUpdate()
 	{
+		bool canCloseGates = true;
+
 		for (int i = 0; i < zombies.Count; i++)
 		{
 			ZombieController a = zombies[i];
@@ -77,7 +84,39 @@ public class GameManager : MonoBehaviour
 					}*/
 				}
 			}
+
+			if (a.transform.position.x < -arenaWidth / 2.0f + 3.0f)
+			{
+				canCloseGates = false;
+				/*if (waveManager.currentWave.HasBegun() && (a.currentWaypoint == null || (a.currentWaypoint != waypointL && !a.CanSee(a.currentWaypoint))))
+				{
+					a.SetWaypoint(waypointL);
+				}*/
+			}
+			else if (a.transform.position.x > arenaWidth / 2.0f - 3.0f)
+			{
+				canCloseGates = false;
+			}
 		}
+
+		if (canCloseGates)
+		{
+			CloseGates();
+		}
+
+		if (zombies.Count == 0 && AreGatesClosed() && waveManager.HasWaveFinishedSpawning())
+		{
+			waveManager.NextWave();
+		}
+	}
+
+	public bool AreGatesClosed()
+	{
+		foreach (GateController gate in gates)
+		{
+			if (!gate.isClosed()) return false;
+		}
+		return true;
 	}
 
 	public void OpenGates()
@@ -86,11 +125,29 @@ public class GameManager : MonoBehaviour
 		{
 			gate.Open();
 		}
+
+		waveManager.currentWave.Begin();
+	}
+
+	public void CloseGates()
+	{
+		foreach (GateController gate in gates)
+		{
+			gate.Close();
+		}
 	}
 
 	public Waypoint FindWaypoint(Vector2 position)
 	{
-		List<Waypoint> sortedWaypoints = new List<Waypoint>(waypoints);
+		List<Waypoint> sortedWaypoints = new List<Waypoint>();
+
+		if (waveManager.currentWave.HasBegun())
+		{
+			sortedWaypoints.Add(waypointL);
+			sortedWaypoints.Add(waypointR);
+			sortedWaypoints.AddRange(waypoints);
+		}
+		
 		sortedWaypoints.Sort(delegate(Waypoint a, Waypoint b)
 		{
 			float af = (transform.position - a.transform.position).magnitude;
@@ -140,5 +197,10 @@ public class GameManager : MonoBehaviour
 			float distance = (waypoint.transform.position - new Vector3(origin.x, origin.y, 0.0f)).magnitude;
 			waypoint.AddInterest(interest * distance / totalDistance);
 		}
+	}
+
+	public void RemoveZombie(ZombieController zombie)
+	{
+		zombies.Remove(zombie);
 	}
 }

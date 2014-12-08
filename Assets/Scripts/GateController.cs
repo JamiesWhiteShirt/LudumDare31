@@ -3,7 +3,7 @@ using System.Collections;
 
 public class GateController : MonoBehaviour
 {
-	private bool open;
+	public bool open;
 	private int doorsStage;
 
 	public int openingTicks = 100;
@@ -38,8 +38,25 @@ public class GateController : MonoBehaviour
 		}
 	}
 
+	public bool isClosed()
+	{
+		if (open)
+		{
+			return doorsStage == openingTicks;
+		}
+		else
+		{
+			return doorsStage == 0;
+		}
+	}
+
 	public void Open()
 	{
 		open = true;
+	}
+
+	public void Close()
+	{
+		open = false;
 	}
 }

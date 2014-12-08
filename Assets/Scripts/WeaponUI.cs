@@ -5,20 +5,20 @@ public class WeaponUI : MonoBehaviour
 {
 	public Sprite[] iconSprites;
 
-	private GameObject[] icons;
+	private SpriteRenderer[] icons;
 
 	void Start()
 	{
-		icons = new GameObject[iconSprites.Length];
+		icons = new SpriteRenderer[iconSprites.Length];
 		for (int i = 0; i < icons.Length; i++)
 		{
-			GameObject icon = new GameObject();
-			icon.transform.parent = transform;
-			icon.transform.position = transform.position + new Vector3(i * 2.0f, 0.0f, 0.0f);
+			GameObject iconObject = new GameObject();
+			iconObject.transform.parent = transform;
+			iconObject.transform.position = transform.position + new Vector3(i * 2.0f, 0.0f, 0.0f);
 
-			icon.AddComponent<SpriteRenderer>().sprite = iconSprites[i];
-
-			icons[i] = icon;
+			icons[i] = iconObject.AddComponent<SpriteRenderer>();
+			icons[i].sortingOrder = 5;
+			icons[i].sprite = iconSprites[i];
 		}
 	}
 
@@ -26,7 +26,7 @@ public class WeaponUI : MonoBehaviour
 	{
 		for (int i = 0; i < icons.Length; i++)
 		{
-			icons[i].GetComponent<SpriteRenderer>().color = new Color(1.0f, 1.0f, 1.0f, i == GameManager.me.player.currentGun ? 1.0f : 0.25f);
+			icons[i].color = new Color(1.0f, 1.0f, 1.0f, i == GameManager.me.player.currentGun ? 1.0f : 0.25f);
 		}
 	}
 }

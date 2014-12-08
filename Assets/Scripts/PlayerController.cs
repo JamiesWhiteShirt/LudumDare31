@@ -11,25 +11,21 @@ public class PlayerController : MonoBehaviour
 
 	public int health = 1350;
 
-	public Sprite pistolCrosshair;
-	public Sprite minigunCrosshair;
-	public Sprite sniperCrosshair;
-	public Sprite pistolIcon;
-	public Sprite minigunIcon;
-	public Sprite sniperIcon;
-
 	public int currentGun;
 	private Gun[] guns;
 	private int timeUntilFire = 0;
 
+	private AnimatedCharacter animatedCharacter;
+
 	void Start()
 	{
 		guns = new Gun[]{
-			new Gun(300.0f, 0.05f, 2.0f, 4, false, false, 25, 1.0f, pistolCrosshair),
-			new Gun(150.0f, 0.15f, 1.0f, 1, true, false, 8, 0.7f, minigunCrosshair),
-			new Gun(800.0f, 0.0f, 3.0f, 8, false, true, 100, 0.6f, sniperCrosshair)
+			new Gun(300.0f, 0.05f, 2.0f, 4, false, false, 25, 1.0f),
+			new Gun(150.0f, 0.15f, 1.0f, 1, true, false, 8, 0.7f),
+			new Gun(800.0f, 0.0f, 3.0f, 8, false, true, 100, 0.6f)
 		};
 		SetGun(0);
+		animatedCharacter = GetComponentInChildren<AnimatedCharacter>();
 	}
 
 	void FixedUpdate()
@@ -67,14 +63,23 @@ public class PlayerController : MonoBehaviour
 			rigidbody2D.velocity = rigidbody2D.velocity.normalized * maxSpeed * guns[currentGun].speedMultiplier;
 		}
 
+		animatedCharacter.AddDistance(rigidbody2D.velocity.magnitude);
+		animatedCharacter.SetDirection(crosshair.transform.position - transform.position);
+
 		if (rigidbody2D.velocity.magnitude / (maxSpeed * guns[currentGun].speedMultiplier) > 0.5f)
 		{
 			GameManager.me.AddInterest(transform.position, 20.0f);
 		}
+	}
 
-		float s = 2.0f + rigidbody2D.velocity.magnitude / (maxSpeed * guns[currentGun].speedMultiplier);
-		crosshair.transform.localScale = new Vector3(s, s, s);
-		crosshair.GetComponent<SpriteRenderer>().color = new Color(1.0f, 1.0f, 1.0f, (guns[currentGun].autoFire || timeUntilFire <= 0) ? 1.0f : 0.5f);
+	public float GetCrosshairScale()
+	{
+		return 2.0f + rigidbody2D.velocity.magnitude / (maxSpeed * guns[currentGun].speedMultiplier);
+	}
+
+	public Color GetCrosshairColor()
+	{
+		return new Color(1.0f, 1.0f, 1.0f, (guns[currentGun].autoFire || timeUntilFire <= 0) ? 1.0f : 0.5f);
 	}
 
 	void Update()
@@ -90,13 +95,10 @@ public class PlayerController : MonoBehaviour
 		float swap = -Input.GetAxis("MouseScrollwheel");
 		if (swap > 0.0f)
 		{
-			Debug.Log("Next");
 			SetGun((currentGun + 1) % guns.Length);
 		}
 		else if (swap < 0.0f)
 		{
-			Debug.Log("Previous");
-
 			SetGun(currentGun <= 0 ? (guns.Length - 1) : (currentGun - 1));
 		}
 
@@ -147,7 +149,6 @@ public class PlayerController : MonoBehaviour
 	{
 		currentGun = index;
 		timeUntilFire = guns[currentGun].fireRate;
-		crosshair.GetComponent<SpriteRenderer>().sprite = guns[currentGun].crosshair;
 	}
 
 	void OnCollisionStay2D(Collision2D collision)
@@ -176,9 +177,8 @@ public class PlayerController : MonoBehaviour
 		public bool piercing;
 		public int fireRate;
 		public float speedMultiplier;
-		public Sprite crosshair;
 
-		public Gun(float velocity, float imprecision, float knockback, int damage, bool autoFire, bool piercing, int fireRate, float speedMultiplier, Sprite crosshair)
+		public Gun(float velocity, float imprecision, float knockback, int damage, bool autoFire, bool piercing, int fireRate, float speedMultiplier)
 		{
 			this.velocity = velocity;
 			this.imprecision = imprecision;
@@ -188,7 +188,6 @@ public class PlayerController : MonoBehaviour
 			this.piercing = piercing;
 			this.fireRate = fireRate;
 			this.speedMultiplier = speedMultiplier;
-			this.crosshair = crosshair;
 		}
 	}
 }

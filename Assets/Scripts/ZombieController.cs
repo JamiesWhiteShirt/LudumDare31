@@ -26,8 +26,19 @@ public class ZombieController : MonoBehaviour
 
 	public int playerInSight = 0;
 
+	private AnimatedCharacter animatedCharacter;
+
+	public void SetProperties(float speed)
+	{
+		runningMaxSpeed *= speed;
+		chasingMaxSpeed *= speed;
+		loiteringMaxSpeed *= speed;
+	}
+
 	void Start()
 	{
+		animatedCharacter = GetComponentInChildren<AnimatedCharacter>();
+
 		SetWaypoint(currentWaypoint);
 
 		GameManager.zombies.Add(this);
@@ -46,7 +57,7 @@ public class ZombieController : MonoBehaviour
 			SetWaypoint(currentWaypoint.SuggestConnection(previousWaypoint));
 		}
 
-		if (currentWaypoint == null && random.Next(100) == 0)
+		if (currentWaypoint == null && random.Next(5) == 0)
 		{
 			SetWaypoint(GameManager.me.FindWaypoint(transform.position));
 		}
@@ -90,6 +101,9 @@ public class ZombieController : MonoBehaviour
 		{
 			rigidbody2D.velocity = rigidbody2D.velocity.normalized * currentMaxSpeed;
 		}
+
+		animatedCharacter.AddDistance(rigidbody2D.velocity.magnitude);
+		animatedCharacter.SetDirection(rigidbody2D.velocity);
 	}
 
 	public void SetWaypoint(Waypoint waypoint)
@@ -107,7 +121,6 @@ public class ZombieController : MonoBehaviour
 		currentWaypoint = waypoint;
 		if (currentWaypoint == null)
 		{
-			loiterAround = transform.position;
 			FindNewLoiterPosition();
 		}
 		else if(previousWaypoint != waypoint)
@@ -121,6 +134,12 @@ public class ZombieController : MonoBehaviour
 				pathCurve = Random.insideUnitCircle * 0.5f / (waypoint.transform.position - transform.position).magnitude;
 			}
 		}
+	}
+
+	public void SetLoiterAround(Vector2 position)
+	{
+		loiterAround = position;
+		FindNewLoiterPosition();
 	}
 
 	public void FindNewLoiterPosition()
@@ -137,7 +156,7 @@ public class ZombieController : MonoBehaviour
 		else
 		{
 			playerInSight--;
-			if (playerInSight == 25)
+			if (playerInSight == 25 && currentWaypoint == GameManager.me.playerWaypoint)
 			{
 				SetWaypoint(null);
 			}
@@ -153,10 +172,13 @@ public class ZombieController : MonoBehaviour
 		}
 
 
-		if (playerInSight > 25 && currentWaypoint != GameManager.me.playerWaypoint)
+		if (playerInSight > 25)
 		{
-			SetWaypoint(GameManager.me.playerWaypoint);
-			GameManager.me.AddInterest(currentWaypoint.transform.position, 100.0f);
+			GameManager.me.AddInterest(GameManager.me.player.transform.position, 50.0f);
+			if (currentWaypoint != GameManager.me.playerWaypoint)
+			{
+				SetWaypoint(GameManager.me.playerWaypoint);
+			}
 		}
 	}
 
@@ -199,7 +221,6 @@ public class ZombieController : MonoBehaviour
 		{
 			Waypoint w = GameManager.me.FindWaypoint(transform.position);
 
-			Debug.Log("Silly me");
 			SetWaypoint(w);
 		}
 	}
@@ -213,8 +234,8 @@ public class ZombieController : MonoBehaviour
 		if (health <= 0)
 		{
 			GameManager.me.AddInterest(transform.position, 40.0f);
+			GameManager.me.RemoveZombie(this);
 			Destroy(gameObject);
-			GameManager.zombies.Remove(this);
 		}
 	}
 }
